@@ -1,0 +1,7 @@
+[VELVET-FORMAT] -fasta
+[VELVET-KMER] 31
+[VELVET-READTYPE] -shortPaired
+[FAA-DIR] /home/cputonti/virusLand/indexes/faa
+[GBK-DIR] /home/cputonti/virusLand/indexes/gbk
+[PAUDA-LOCATION] /home/cputonti/pauda-1.0.1/pauda/bin
+[STOP]

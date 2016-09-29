@@ -1,0 +1,237 @@
+import java.awt.Dimension;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import org.jfree.ui.RefineryUtilities;
+
+public class FileReader {
+
+	File file;
+	ArrayList<Species> speciesList; // List of the species in the file
+
+	public FileReader(File file) {
+
+		this.file = file;
+		if (this.file == null)
+			System.exit(0);
+		this.speciesList = new ArrayList<Species>();
+
+		try {
+			// read the file
+			BufferedReader reader = new BufferedReader(new java.io.FileReader(
+					this.file));
+			while (reader.ready()) {
+				String line = reader.readLine(); // get header
+				if (line.equals("") || line.equals("*")) {
+					continue;
+				}
+				String[] information = line.split("\\|");
+				String speciesAccessNumber = information[0]; // get species
+																// Accession
+																// Number
+				String speciesName = information[1]; // get species Name
+				Species species = new Species(speciesAccessNumber, speciesName);// Create
+																				// a
+																				// species
+
+				// read the proteins of an Species
+				while (!line.equals("*") && reader.ready()) {
+					line = reader.readLine();
+					if (line.equals("")) {
+						continue;
+					}
+					if (!line.equals("*")) {
+						information = line.split("\\|");
+						String proteinAccessionNumber = information[0]; // get
+																		// the
+																		// species
+																		// accesion
+																		// Number
+						int proteinNumberOfHits = Integer // get the number of
+															// hits of the
+															// protein
+								.parseInt(information[1]);
+						species.addProtein(proteinAccessionNumber,
+								proteinNumberOfHits); // add a protein to the
+														// current species
+					}
+				}
+				this.speciesList.add(species); // add the species to the list
+
+			}
+			reader.close(); // close the reader
+			new Graphics(speciesList);
+
+		} catch (FileNotFoundException e) {
+			// Treat exceptions
+			FrameSequence.mostrarAviso("ERROR",
+					"There's a problem with the file. Check it an try again");
+		} catch (IOException e) {
+			// Treat exceptions
+			FrameSequence
+					.mostrarAviso("ERROR",
+							"There's a problem with the  file. Check the format and try again");
+		}
+
+	}
+
+	// return an determined species based on its accessionNumber
+	// return null in cases of accessionNumber not found
+	public Species getSpecie(String accessionNumber) {
+		for (int i = 0; i < this.speciesList.size(); i++) {
+			if (this.speciesList.get(i).accessionNumber
+					.equalsIgnoreCase(accessionNumber))
+				return this.speciesList.remove(i);
+		}
+		return null;
+	}
+
+	// return the list of Species
+	public ArrayList<Species> getListOfSpecies() {
+		return this.speciesList;
+	}
+
+}
+
+// This class was created to generate the frame to selection of files
+
+class FrameSequence extends javax.swing.JFrame {
+
+	// Variables declaration - do not modify
+
+	// End of variables declaration
+
+	/**
+	 * 
+	 */
+	private javax.swing.JButton jButton1;
+	private javax.swing.JButton jButton2;
+	private javax.swing.JButton jButton3;
+	private javax.swing.JLabel jLabel1;
+	private javax.swing.JTextField jTextField1;
+	File file;
+	FileReader reader;
+
+	public FrameSequence() {
+
+		initComponents();
+		this.setSize(new Dimension(500, 200));
+		try {
+			for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager
+					.getInstalledLookAndFeels()) {
+				if ("Nimbus".equals(info.getName())) {
+					javax.swing.UIManager.setLookAndFeel(info.getClassName());
+					break;
+				}
+			}
+		} catch (ClassNotFoundException ex) {
+			java.util.logging.Logger.getLogger(FrameSequence.class.getName())
+					.log(java.util.logging.Level.SEVERE, null, ex);
+		} catch (InstantiationException ex) {
+			java.util.logging.Logger.getLogger(FrameSequence.class.getName())
+					.log(java.util.logging.Level.SEVERE, null, ex);
+		} catch (IllegalAccessException ex) {
+			java.util.logging.Logger.getLogger(FrameSequence.class.getName())
+					.log(java.util.logging.Level.SEVERE, null, ex);
+		} catch (javax.swing.UnsupportedLookAndFeelException ex) {
+			java.util.logging.Logger.getLogger(FrameSequence.class.getName())
+					.log(java.util.logging.Level.SEVERE, null, ex);
+		}
+		RefineryUtilities.centerFrameOnScreen(this);
+		this.setVisible(true);
+	}
+
+	// initialize the components to generate the window
+	private void initComponents() {
+
+		jLabel1 = new javax.swing.JLabel();
+		jButton1 = new javax.swing.JButton();
+		jTextField1 = new javax.swing.JTextField();
+		jButton2 = new javax.swing.JButton();
+		jButton3 = new javax.swing.JButton();
+
+		setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+		getContentPane().setLayout(null);
+
+		jLabel1.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+		jLabel1.setText("Select the file you want to analyze:");
+		getContentPane().add(jLabel1);
+		jLabel1.setBounds(10, 10, 195, 36);
+
+		jButton1.setText("Cancel");
+		jButton1.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				jButtonCancelActionPerformed(evt);
+			}
+		});
+		getContentPane().add(jButton1);
+		jButton1.setBounds(240, 120, 90, 30);
+		getContentPane().add(jTextField1);
+		jTextField1.setBounds(20, 70, 410, 30);
+
+		jButton2.setText("Ok");
+		jButton2.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				jButtonOKActionPerformed(evt);
+			}
+		});
+		getContentPane().add(jButton2);
+		jButton2.setBounds(340, 120, 90, 30);
+
+		jButton3.setText("...");
+		getContentPane().add(jButton3);
+		jButton3.setBounds(440, 70, 30, 30);
+		jButton3.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+				jButtonGetFileActionPerformed(evt);
+			}
+		});
+
+		pack();
+	}
+
+	// action to Get File Button
+	private void jButtonGetFileActionPerformed(java.awt.event.ActionEvent evt) {
+		this.file = getFile();
+		if (this.file != null)
+			this.jTextField1.setText(this.file.getAbsolutePath());
+	}
+
+	// action to Ok button
+	private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {
+		if (this.file == null) {
+
+			mostrarAviso("ERROR",
+					"A text file is required. Check the file and try again.");
+			return;
+		}
+		this.reader = new FileReader(this.file);
+		this.dispose();
+
+	}
+
+	// action to Cancel Button
+	private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {
+
+		System.exit(0);
+	}
+
+	private java.io.File getFile() // open a window to select a file
+	{
+		javax.swing.JFileChooser path = new javax.swing.JFileChooser(".");
+		path.setMultiSelectionEnabled(false);
+		if (path.showOpenDialog(null) != javax.swing.JFileChooser.APPROVE_OPTION)
+			return (null);
+		return (path.getSelectedFile());
+	}
+
+	public static void mostrarAviso(String title, String text) // generate an
+																// alert window
+	{
+		javax.swing.JOptionPane.showMessageDialog(new javax.swing.JFrame(),
+				text, title, javax.swing.JOptionPane.INFORMATION_MESSAGE);
+	}
+}
