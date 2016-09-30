@@ -47,7 +47,7 @@ class OutCalls:
 		return self
 
 	def callSpades(seq1, seq2, outPath, k=None, meta=False):
-
+		#Should check to make sure spades.py exists here, exit program right waway otherwise with explanation
 		spadesPath = os.getcwd()+'/spades/spades.py'
 
 		if not k:
@@ -61,6 +61,8 @@ class OutCalls:
 		os.system('{spadesPath} -k {k} {assemblerOption} -1 {seq1} -2 {seq2} -o {outPath}'.format(**locals()))
 
 	def callVelvet(self, fmt, out, seq1, seq2, readtype, kmer):
+
+
 
 		read1 = os.path.basename(seq1).split('.')[0]
 		read2 = os.path.basename(seq2).split('.')[0]
@@ -116,9 +118,12 @@ class OutCalls:
 
 	def parseLambda(self, file_in):
 
+		#Add try/except block later to catch filepath errors and allow for re-input
+		file_in = checkFilePath(file_in, 'LAMDBA OUTPUT PARSING ERROR: NO FILE AT PATH {}'.format(file_in))
+
 		parsed_name = file_in.split('.')[0]+'_parsed.m8'
 		f = open(file_in, 'r')
-		o = open(file_in, 'w')
+		o = open(parsed_name, 'w')
 		while True:
 			line = f.readline()
 			if line == "":
@@ -127,6 +132,32 @@ class OutCalls:
 				break
 			output = re.split(r'\t+', line)
 			o.write(output[0]+"\t"+output[1]+"\t"+output[10]+"\n")
+
+	def jPaudaParser(file_in, file_out):
+		#Add try/except block later to catch filepath errors and allow for re-input
+		file_in = checkFilePath(file_in, 'PAUDA OUTPUT PARSING ERROR: NO FILE AT PATH {}'.format(file_in))
+		fin = open(file_in, 'r')
+		fout = open(file_out, 'w')
+		print ''
+		line = fin.readline()
+		if re.search('^Query=', line):
+			currQuery = line[6:]
+		if re.search('^Expect = ', line):
+			currExp = line[9:]
+		if re.search('^\>', line):
+			currHit = line[1:]
+		lineOut = currQuery + "\t" + currHit + "\t" + currExp + "\n"
+		fout.write(lineOut)
+
+	def checkFilePath(file_in, errMsg=''):
+		while not os.path.isfile(file_in) and file_in != '-q':
+			if not errMsg:
+				errMsg = 'No file at path {}'.format(file_in)
+			print errMsg
+			file_in = input('Please re-enter the file path: ')
+		if file_in = '-q':
+			sys.exit()
+		return file_in
 
 	def moveFiles(self, oldLoc, newLoc, keepOld = True):
 		os.system('mv {} {}'.format(oldLoc, newLoc))
