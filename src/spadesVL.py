@@ -5,6 +5,17 @@
 import glob
 import subprocess
 import os
+import argsparse
+import sys
+'''
+TODO:
+-Write argparser
+-check_config method? to check that folders assigned actually exist? maybe create if not?
+-main
+-call graphics module
+-cFileParse3.cpp call or rewrite
+'''
+
 
 class OutCalls:
 
@@ -17,7 +28,7 @@ class OutCalls:
 		self.seq2    = argv[3]
 		self.runName = runName
 
-		self.vlhome = os.path.abspath(os.path.join(self.cwd,os.pardir))
+		self.vlhome = os.path.abspath(os.path.join(os.getcwd(),os.pardir)) #Go up one directory from src folder code should be executing from
 
 		self.indexFolder  = self.vlhome+'/indexes'
 		self.paudaindex   = self.indexFolder+'/paudaindex/'
@@ -43,10 +54,10 @@ class OutCalls:
 		self.paudaloc   = None
 
 	def getArgs(self):
-		#need to use getopt module to get command-line options
+		#need to use argsparse module to get command-line options
 		return self
 
-	def callSpades(seq1, seq2, outPath, k=None, meta=False):
+	def callSpades(self, seq1, seq2, outPath, k=None, meta=False):
 		#Should check to make sure spades.py exists here, exit program right waway otherwise with explanation
 		spadesPath = os.getcwd()+'/spades/spades.py'
 
@@ -58,24 +69,22 @@ class OutCalls:
 		else:
 			assemblerOption = '--only-assembler'
 
-		os.system('{spadesPath} -k {k} {assemblerOption} -1 {seq1} -2 {seq2} -o {outPath}'.format(**locals()))
+		os.system('{spadesPath!s} -k {k!s} {assemblerOption!s} -1 {seq1!s} -2 {seq2!s} -o {outPath!s}'.format(**locals()))
 
-	def callVelvet(self, fmt, out, seq1, seq2, readtype, kmer):
-
-
+	def callVelvet(self, fmt, outDir, seq1, seq2, readtype, kmer):
 
 		read1 = os.path.basename(seq1).split('.')[0]
 		read2 = os.path.basename(seq2).split('.')[0]
 
-		outName   = '{}X{}.fa'.format(read1, read2)
-		velvetOut = '{}/{}X{}'.format(out,read1, read2)
+		outName   = '{read1!s}X{read2!s}.fa'.format(**locals)
+		velvetOut = '{outDir!s}/{read1!s}X{read2!s}'.format(**locals)
 
 		print "Assembling reads with velvet"
-		print 'Velvet hashing {}'.format(outName)
+		print 'Velvet hashing {!r}'.format(outName)
 		subprocess.call(['velveth', velvetOut, kmer, fmt, readtype, seq1, seq2])
 		
-		print 'Velvet graphing {}'.format(outName)
-		os.system('velvetg {} -exp_cov auto'.format(velvetOut))
+		print 'Velvet graphing {!r}'.format(outName)
+		os.system('velvetg {!s} -exp_cov auto'.format(velvetOut))
 
 		contigFile = velvetOut + '/contigs.fa'
 		moveFiles(contigFile, out, keepOld = False)
@@ -88,11 +97,11 @@ class OutCalls:
 
 		for input_file in files:
 			outname = out_dir + os.path.basename(input_file).split('.')[0] + '_ORF.fa'
-			args    = 'getorf -sequence %s -outseq %s -minsize 117 -find 3' % (input_file, outname)
+			args    = 'getorf -sequence {!s} -outseq {!s} -minsize 117 -find 3'.formats(input_file, outname)
             print(args)
             subprocess.call(args, shell=True)
 
-    def callPauda(self, orf_folder=self.orfs, file_name, pauda_dir, pauda_out=self.pauda_out, pauda_index=self.paudaindex, pauda_loc = self.paudaloc, ):
+    def callPauda(self, orf_folder, file_name, pauda_dir, pauda_out, pauda_index, pauda_loc):
     
     	print 'Executing Pauda read mapper'
     	
@@ -102,14 +111,14 @@ class OutCalls:
     	print args
 		subprocess.call(args)
 
-	def callLambda(self, faa_all=self.faaAll, lambda_out = self.lambda_out, input_orfs=self.orfs, parseOutput = True):
+	def callLambda(self, faa_all, lambda_out, input_orfs, parseOutput = True):
 
 		files = glob.glob(input_orfs+'/*')
 		for input_file in files:
 			file_name = os.path.basename(input_file).split('.')[0]
 			out_path  = lambda_out + file_name + '.m8'
-			args = 'sudo lambda -q {} -d {} -o {}'.format(input_file, faa_all, out_path)
-			print 'Outputing Lambda mapping to {}'.format(out_path)
+			args = 'sudo lambda -q {!s} -d {!s} -o {!s}'.format(input_file, faa_all, out_path)
+			print 'Outputing Lambda mapping to {!r}'.format(out_path)
 			print args
 			subprocess.call(args, shell=True)
 			subprocess.call(['sudo', 'chmod', '666', out_path])
@@ -119,7 +128,7 @@ class OutCalls:
 	def parseLambda(self, file_in):
 
 		#Add try/except block later to catch filepath errors and allow for re-input
-		file_in = checkFilePath(file_in, 'LAMDBA OUTPUT PARSING ERROR: NO FILE AT PATH {}'.format(file_in))
+		file_in = checkFilePath(file_in, 'LAMDBA OUTPUT PARSING ERROR: NO FILE AT PATH {!S}'.format(file_in))
 
 		parsed_name = file_in.split('.')[0]+'_parsed.m8'
 		f = open(file_in, 'r')
@@ -133,11 +142,11 @@ class OutCalls:
 			output = re.split(r'\t+', line)
 			o.write(output[0]+"\t"+output[1]+"\t"+output[10]+"\n")
 
-	def jPaudaParser(file_in, file_out):
+	def jPaudaParser(self, file_in, file_out):
 		#Add try/except block later to catch filepath errors and allow for re-input
-		file_in = checkFilePath(file_in, 'PAUDA OUTPUT PARSING ERROR: NO FILE AT PATH {}'.format(file_in))
-		fin = open(file_in, 'r')
-		fout = open(file_out, 'w')
+		file_in = checkFilePath(file_in, 'PAUDA OUTPUT PARSING ERROR: NO FILE AT PATH {S}'.format(file_in))
+		fin     = open(file_in, 'r')
+		fout    = open(file_out, 'w')
 		print ''
 		line = fin.readline()
 		if re.search('^Query=', line):
@@ -149,13 +158,13 @@ class OutCalls:
 		lineOut = currQuery + "\t" + currHit + "\t" + currExp + "\n"
 		fout.write(lineOut)
 
-	def checkFilePath(file_in, errMsg=''):
+	def checkFilePath(self, file_in, errMsg=''):
 		while not os.path.isfile(file_in) and file_in != '-q':
 			if not errMsg:
 				errMsg = 'No file at path {}'.format(file_in)
 			print errMsg
-			file_in = input('Please re-enter the file path: ')
-		if file_in = '-q':
+			file_in = input('Please re-enter the file path (or -q to quit): ')
+		if file_in == '-q':
 			sys.exit()
 		return file_in
 
